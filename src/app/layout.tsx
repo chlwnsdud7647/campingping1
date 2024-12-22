@@ -1,11 +1,9 @@
 import type { Metadata } from 'next';
-import Image from 'next/image';
-import logoText from '@images/campingping_orange.svg';
-import symbolImg from '@images/campingping.png';
 
 // These styles apply to every route in the application
 import './globals.css';
-import DesktopUi from './DesktopBg';
+import DesktopUi from './DesktopUi';
+import MobileUi from './MobileUi';
 
 export const metadata: Metadata = {
   title: 'Create Next App',
@@ -20,10 +18,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <div className="flex h-screen justify-center items-center">
-          <DesktopUi />
-          <div className="w-full md:max-w-[450px] h-full flex justify-center overflow-auto">
-            {children}
+        <div className="lg:flex justify-center h-screen">
+          <div className="hidden lg:flex justify-center max-w-[450px]">
+            <DesktopUi />
+          </div>
+          <div className="lg:overflow-auto">
+            <MobileUi>{children}</MobileUi>
           </div>
         </div>
       </body>
