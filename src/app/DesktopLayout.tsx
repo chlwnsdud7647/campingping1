@@ -3,9 +3,20 @@
 import Image from 'next/image';
 import logoText from '@images/campingping_orange.svg';
 import symbolImg from '@images/campingping.png';
+import { useEffect, useState } from 'react';
 
 const DesktopUi = () => {
-  const isMobile = /Mobi/i.test(window.navigator.userAgent);
+  const [isMobile, setIsMobile] = useState(false);
+
+  const checkDevice = () => {
+    if (/Mobi/i.test(window.navigator.userAgent)) {
+      setIsMobile(true);
+    }
+  };
+
+  useEffect(() => {
+    checkDevice();
+  }, []);
 
   if (isMobile) return null;
   else

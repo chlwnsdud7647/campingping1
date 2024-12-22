@@ -5,7 +5,7 @@ import symbolImg from '@images/campingping.png';
 
 // These styles apply to every route in the application
 import './globals.css';
-import DesktopUi from './DesktopBg';
+import DesktopUi from './DesktopLayout';
 
 export const metadata: Metadata = {
   title: 'Create Next App',
