@@ -8,6 +8,9 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      width: {
+        '10.5/12': '87.5%',
+      },
       zindex: {
         zCard: '1',
         zSearchBar: '1',
@@ -18,7 +21,7 @@ const config: Config = {
         zBanner: '4',
         zMapModal: '6',
       },
-      fontsize: {
+      fontSize: {
         title: '24px',
         subTitle: '22px',
         content: '16px',
@@ -35,6 +38,7 @@ const config: Config = {
         DarkGray: '#919191',
         black: '#000000',
         white: '#ffffff',
+        kakaoYellow: '#FBE300',
       },
     },
   },
