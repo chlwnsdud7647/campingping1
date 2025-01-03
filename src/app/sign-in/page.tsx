@@ -10,13 +10,53 @@ import KakaoLogo from '@icons/KakaoTalk_logo.svg';
 
 import Input from '@/components/Input/Input';
 import Button from '@/components/Button/Button';
+import { api } from '@/utils/axios';
+import { useRouter } from 'next/navigation';
+import { toast } from 'react-toastify';
+
+interface FormData {
+  email: string;
+  password: string;
+}
 
 const SignIn = () => {
-  const { register, handleSubmit } = useForm();
-  const onSubmit = (data: any) => {
-    console.log(data);
+  const router = useRouter();
+  const { register, handleSubmit } = useForm<FormData>();
+  const onSubmit = async (data: FormData) => {
+    const { email, password } = data;
+
+    if (email && password) {
+      try {
+        const res = await api.post('/auth/login', {
+          email,
+          password,
+        });
+
+        if (res.status === 200) {
+          router.push('/list');
+        } else {
+          toast.error('이메일 또는 비밀번호가 잘못되었습니다.');
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    }
   };
 
+  const kakaoSignIn = async () => {
+    try {
+      const res = await api.get('/auth/kakao-login');
+      if (res.status === 200) {
+        router.push('/list');
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const moveToSignUp = () => {
+    router.push('/sign-up');
+  };
   return (
     <div className="relative flex justify-center items-center w-full">
       <Image
@@ -62,17 +102,21 @@ const SignIn = () => {
               {...register('password')}
             />
           </div>
-          <Button width={'w-10/12'} onClick={() => {}}>
-            로그인
-          </Button>
+          <Button width={'w-10/12'}>로그인</Button>
         </form>
-        <Button width={'w-10/12'} bgcolor={'bg-kakaoYellow'} onClick={() => {}}>
+        <Button
+          width={'w-10/12'}
+          bgcolor={'bg-kakaoYellow'}
+          onClick={kakaoSignIn}
+        >
           <div className="flex justify-center">
             <Image src={KakaoLogo} width={27} height={27} alt="kakao" />
             <span className="ml-1">카카오 로그인</span>
           </div>
         </Button>
-        <button className="mt-2">회원가입</button>
+        <button className="mt-2" onClick={moveToSignUp}>
+          회원가입
+        </button>
       </div>
     </div>
   );
