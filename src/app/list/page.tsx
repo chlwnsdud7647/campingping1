@@ -41,6 +41,13 @@ const List = () => {
     [createQueryString, router]
   );
 
+  const handleCategorySelected = useCallback(
+    (categoryValue: string) => {
+      setSelectedCategory(categoryValue);
+    },
+    [setSelectedCategory]
+  );
+
   const fetchCampingData = useCallback(async () => {
     try {
       const apiUrl = createQueryString('/campings/lists', [
@@ -87,13 +94,6 @@ const List = () => {
     setIsLoading(false);
   }, [fetchCampingData, nextCursorRef]);
 
-  const handleCategorySelected = useCallback(
-    (categoryValue: string) => {
-      setSelectedCategory(categoryValue);
-    },
-    [setSelectedCategory]
-  );
-  console.log(campingData);
   return (
     <div className="flex flex-col ">
       <SearchBar

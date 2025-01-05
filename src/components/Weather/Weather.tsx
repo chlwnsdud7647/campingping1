@@ -69,13 +69,13 @@ const Weather = () => {
 
 export default Weather;
 
-const formatDate = (date: string) => {
+export const formatDate = (date: string) => {
   const month = date.slice(4, 6);
   const day = date.slice(6, 8);
   return `${month}/${day}`;
 };
 
-const filterWeatherData = (data: any[]) => {
+export const filterWeatherData = (data: any[]) => {
   const today = new Date();
   const formattedToday = formatDateAsKey(today);
 
@@ -89,7 +89,7 @@ const filterWeatherData = (data: any[]) => {
   return filteredData;
 };
 
-const formatDateAsKey = (date: Date) => {
+export const formatDateAsKey = (date: Date) => {
   const year = date.getFullYear().toString();
   const month = (date.getMonth() + 1).toString().padStart(2, '0');
   const day = date.getDate().toString().padStart(2, '0');
