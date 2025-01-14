@@ -4,133 +4,141 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Category from '@/components/Category/Category';
 import Card from '@/components/Card/Card';
-import Camp from '@/types/Camp';
-import { BASE_URL } from '@/config/config';
-import axios from 'axios';
+import { Camp } from '@/types/Camp';
+import SearchBar from '@/components/SearchBar/SearchBar';
+import { api } from '@/utils/axios';
+import useInfiniteScroll from '@/hooks/useInfiniteScroll';
+import LoadingSpinner from '@/components/Button/LoadingSpinner';
+import { useCreateQueryString } from '@/hooks/useCreateQueryString';
+import { regionStore } from '@/stores/useRegionState';
+import { userStore } from '@/stores/userState';
 
 const List = () => {
-  const searchParams = useSearchParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
-  const [selectedCategory, setSelectedCategory] = useState(
-    searchParams.get('category') || '전체'
-  );
   const [campingData, setCampingData] = useState<Camp[] | null>(null);
-  const [page, setPage] = useState(1);
-  const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
-  const createQueryString = useCallback(
-    (name: string, value: string) => {
-      const params = new URLSearchParams(searchParams.toString());
-      params.set(name, value);
-      return params.toString();
-    },
-    [searchParams]
-  );
-
-  const fetchCampingData = useCallback(
-    async (page: number) => {
-      try {
-        const apiUrl =
-          selectedCategory === '전체'
-            ? `${BASE_URL}/campings/lists?limit=10&cursor=${page}`
-            : `${BASE_URL}/campings/lists?limit=10&cursor=${page}&category=${selectedCategory}`;
-
-        const response = await axios.get(apiUrl);
-        const camps = response.data.data.result;
-        return camps;
-      } catch (error) {
-        console.error(error);
-      }
-    },
-    [selectedCategory]
-  );
-
-  const loadMore = async () => {
-    const newPage = page + 1;
-    const newData = await fetchCampingData(newPage);
-    setCampingData((prevData) => [...(prevData || []), ...newData]);
-    setPage(newPage);
-  };
-
-  const handleObserver = useCallback(
-    (entries: IntersectionObserverEntry[]) => {
-      const target = entries[0];
-      if (target.isIntersecting) {
-        loadMore();
-      }
-    },
-    [page]
-  );
-
-  useEffect(() => {
-    if (selectedCategory === '전체') {
-      router.push(`/list`);
-    } else {
-      router.push(`/list?${createQueryString('category', selectedCategory)}`);
-    }
-  }, [createQueryString, router, selectedCategory]);
-
-  useEffect(() => {
-    if (selectedCategory === '전체') {
-      router.push(`/list`);
-    } else {
-      router.push(`/list?${createQueryString('category', selectedCategory)}`);
-    }
-  }, [createQueryString, router, selectedCategory]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      const data = await fetchCampingData(page);
-      setCampingData(data);
-    };
-    fetchData();
-  }, [fetchCampingData, page]);
-
-  useEffect(() => {
-    observerRef.current = new IntersectionObserver(handleObserver, {
-      rootMargin: '70px',
+  const [isLoading, setIsLoading] = useState(false);
+  const { nextCursorRef, currentCursor, LIMIT, resetCursor } =
+    useInfiniteScroll({
+      loadMoreElementRef: loadMoreRef,
     });
 
-    if (loadMoreRef.current) {
-      observerRef.current.observe(loadMoreRef.current);
-    }
+  const createQueryString = useCreateQueryString(searchParams);
+  const { regionState } = regionStore();
 
-    return () => {
-      if (loadMoreRef.current) {
-        observerRef.current?.unobserve(loadMoreRef.current);
-      }
-    };
-  }, [handleObserver]);
+  const selectedCategory = searchParams.get('category') || '';
+  const selectedRegion = regionState || '';
 
-  const handleCategorySelected = useCallback((categoryName: string) => {
-    setSelectedCategory(categoryName);
+  useEffect(() => {
+    router.replace(
+      createQueryString('/list', [
+        {
+          name: 'category',
+          value: selectedCategory,
+        },
+        {
+          name: 'region',
+          value: selectedRegion,
+        },
+      ])
+    );
   }, []);
 
+  const setSelectedCategory = useCallback(
+    (categoryValue: string) => {
+      router.push(
+        createQueryString('/list', [{ name: 'category', value: categoryValue }])
+      );
+    },
+    [createQueryString, router]
+  );
+
+  const fetchCampingData = useCallback(async () => {
+    try {
+      const apiUrl = createQueryString('/campings/lists', [
+        { name: 'limit', value: LIMIT },
+        { name: 'cursor', value: currentCursor },
+        { name: 'category', value: selectedCategory },
+        { name: 'region', value: selectedRegion },
+      ]);
+      const response = await api.get(apiUrl);
+      const camps = response.data.data.result;
+      const nextCursor = response.data.data.nextCursor;
+      return { camps, nextCursor };
+    } catch (error) {
+      console.error(error);
+      return { camps: [], nextCursor: 0 };
+    }
+  }, [
+    LIMIT,
+    createQueryString,
+    currentCursor,
+    selectedCategory,
+    selectedRegion,
+  ]);
+
+  useEffect(() => {
+    setCampingData([]);
+    resetCursor();
+  }, [resetCursor, selectedCategory, selectedRegion]);
+
+  useEffect(() => {
+    setIsLoading(true);
+    fetchCampingData().then(({ camps, nextCursor }) => {
+      nextCursorRef.current = nextCursor;
+      setCampingData((previous) => {
+        const listOfPreviousContentId =
+          previous?.map((previousCamp) => previousCamp.contentId) || [];
+        const deDuplicatedResults = camps.filter(
+          (camp: Camp) => !listOfPreviousContentId.includes(camp.contentId)
+        );
+
+        return [...(previous || []), ...deDuplicatedResults];
+      });
+    });
+    setIsLoading(false);
+  }, [fetchCampingData, nextCursorRef]);
+
+  const handleCategorySelected = useCallback(
+    (categoryValue: string) => {
+      setSelectedCategory(categoryValue);
+    },
+    [setSelectedCategory]
+  );
   return (
-    <div className="flex flex-col grow">
+    <div className="flex flex-col ">
+      <SearchBar />
       <Category
         selectedCategory={selectedCategory}
         onCategorySelected={handleCategorySelected}
       />
-      <div className="flex align-center p-4">
-        <div className="flex flex-col items-center space-y-8 scroll-smooth mx-*">
-          {campingData?.length ? (
-            campingData.map((camp) => (
-              <Card
-                key={camp.id}
-                itemId={camp.contentId}
-                liked={false}
-                imgSrc={camp.images?.url || ''}
-                name={camp.factDivNm}
-                address={`${camp.addr1} ${camp.addr2}` || ''}
-                description={camp.lineIntro || ''}
-              />
-            ))
-          ) : (
-            <p>검색 결과가 없습니다</p>
-          )}
-        </div>
+      <div className="flex flex-col space-y-8 scroll-smooth p-4 mx-*">
+        {campingData?.length ? (
+          campingData.map((camp) => (
+            <Card
+              key={camp.contentId}
+              itemId={camp.contentId}
+              liked={camp.favorite}
+              imgSrc={camp.firstImageUrl}
+              name={camp.facltNm ? camp.facltNm : ''}
+              address={
+                camp.addr1
+                  ? camp.addr2
+                    ? `${camp.addr1} ${camp.addr2}`
+                    : camp.addr1
+                  : ''
+              }
+              description={camp.lineIntro || ''}
+            />
+          ))
+        ) : (
+          <p>검색 결과가 없습니다</p>
+        )}
+      </div>
+      <div ref={loadMoreRef} className="h-[100px]">
+        {isLoading && <LoadingSpinner />}
       </div>
     </div>
   );

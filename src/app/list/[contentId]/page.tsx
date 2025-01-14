@@ -1,24 +1,43 @@
 'use client';
 
-import { CampInfo } from '@/types/Camp';
+import { CampDetail } from '@/types/Camp';
 import Carousel from '@/components/Carousel/Carousel';
 import DefaultImg from '@/components/DefaultImg/DefaultImg';
 import { BASE_URL } from '@/config/config';
 import { useGlobalStore } from '@/stores/globalState';
-import axios from 'axios';
+import { api } from '@/utils/axios';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
+import WeatherWithLatLon from '@/components/Weather/WeatherWithLatLon';
+import myWishIcon from '@icons/liked.svg';
+import notMyWishIcon from '@icons/not-liked.svg';
+import useWishlist from '@/hooks/useWishlist';
+import Weather from '@/components/Weather/Weather';
 
 interface Facility {
   name: string;
   iconName: string;
 }
 
+const facilityIcons: Facility[] = [
+  { name: '전기', iconName: 'electricity' },
+  { name: '무선인터넷', iconName: 'wifi' },
+  { name: '장작판매', iconName: 'firewood' },
+  { name: '온수', iconName: 'hot-water' },
+  { name: '트렘폴린', iconName: 'trampoline' },
+  { name: '물놀이장', iconName: 'pool' },
+  { name: '놀이터', iconName: 'playground' },
+  { name: '산책로', iconName: 'trail' },
+  { name: '운동장', iconName: 'playfield' },
+  { name: '운동시설', iconName: 'exercise-facilities' },
+  { name: '마트.편의점', iconName: 'market' },
+  { name: '덤프스테이션', iconName: 'dump-station' },
+];
 const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_MAP_KEY;
 
 const ListDetail = ({ params }: { params: { contentId: string } }) => {
   const { contentId } = params;
-  const [campData, setCampData] = useState<CampInfo | null>(null);
+  const [campData, setCampData] = useState<CampDetail | null>(null);
   const { mapScriptLoaded } = useGlobalStore();
 
   useEffect(() => {
@@ -60,9 +79,7 @@ const ListDetail = ({ params }: { params: { contentId: string } }) => {
   useEffect(() => {
     const fetchDataAndCreateMap = async () => {
       try {
-        const response = await axios.get(
-          `${BASE_URL}/campings/lists/${contentId}`
-        );
+        const response = await api.get(`/campings/lists/${contentId}`);
 
         const camp = response.data.data;
 
@@ -87,42 +104,41 @@ const ListDetail = ({ params }: { params: { contentId: string } }) => {
     };
   }, [contentId]);
 
-  const facilityIcons: Facility[] = [
-    { name: '전기', iconName: 'electricity' },
-    { name: '무선인터넷', iconName: 'wifi' },
-    { name: '장작판매', iconName: 'firewood' },
-    { name: '온수', iconName: 'hot-water' },
-    { name: '트렘폴린', iconName: 'trampoline' },
-    { name: '물놀이장', iconName: 'pool' },
-    { name: '놀이터', iconName: 'playground' },
-    { name: '산책로', iconName: 'trail' },
-    { name: '운동장', iconName: 'playfield' },
-    { name: '운동시설', iconName: 'exercise-facilities' },
-    { name: '마트.편의점', iconName: 'market' },
-    { name: '덤프스테이션', iconName: 'dump-station' },
-  ];
-
   if (!campData) {
     return <p>Loading...</p>;
   }
 
   const facilities = !!campData.sbrsCl ? campData.sbrsCl.split(',') : null;
 
+  // const handleWishlist = (event: MouseEvent): void => {
+  //   useWishlist().addOrRemoveWishlist();
+  // };
+
   return (
     <div className="w-[390px] p-4">
+      <Weather />
       <div className="flex flex-col grow p-2 ">
-        <div className="space-y-4 mb-4">
-          {campData.images ? (
+        <div className="relative space-y-4 mb-4">
+          {campData.firstImageUrl ? (
             <Image
               className=" rounded-[5px] justify-items-stretch "
-              src={campData.images[0]?.url}
+              src={campData.firstImageUrl}
               alt={`${campData.factDivNm} 사진`}
               width={380}
               height={320}
             />
           ) : (
-            <DefaultImg type="camp" className="" width={350} height={200} />
+            <DefaultImg type="noimg" className="" width={350} height={200}/>
           )}
+          <Image
+            src={campData.favorite ? myWishIcon : notMyWishIcon}
+            alt="위시리스트"
+            width={20}
+            height={19}
+            className="absolute top-2.5 right-2.5"
+            style={{ margin: '0px' }}
+            // onClick={handleWishlist}
+          />
 
           <h2 className="text-subTitle">{campData.factDivNm}</h2>
           <p className="text-description text-Gray">
@@ -142,6 +158,11 @@ const ListDetail = ({ params }: { params: { contentId: string } }) => {
           <span className="text-LightGray text-[6px]">●</span>
           <span className="text-LightGray text-[6px]">●</span>
           <span className="text-LightGray text-[6px]">●</span>
+        </div>
+
+        <div className="space-y-4 mb-4">
+          <p>기본정보</p>
+          <div className="flex flex-row flex-wrap"></div>
         </div>
 
         <div className="space-y-4 mb-4">

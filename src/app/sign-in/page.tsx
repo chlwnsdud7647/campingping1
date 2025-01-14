@@ -1,45 +1,61 @@
 'use client';
 
+import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+
+import { toast } from 'react-toastify';
 import { useForm } from 'react-hook-form';
+
+import Input from '@/components/Input/Input';
+import Button from '@/components/Button/Button';
+
+import { userStore } from '@/stores/userState';
 
 import LogoWhite from '@images/campingping_white.svg';
 import RegisterBg from '@images/registerBg.jpg';
 import SymbolImg from '@images/campingping.png';
 import KakaoLogo from '@icons/KakaoTalk_logo.svg';
 
-import Input from '@/components/Input/Input';
-import Button from '@/components/Button/Button';
 import { api } from '@/utils/axios';
-import { useRouter } from 'next/navigation';
-import { toast } from 'react-toastify';
 
 interface FormData {
   email: string;
   password: string;
 }
 
+const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+
 const SignIn = () => {
   const router = useRouter();
+  const { setUserState } = userStore();
   const { register, handleSubmit } = useForm<FormData>();
+
   const onSubmit = async (data: FormData) => {
     const { email, password } = data;
 
-    if (email && password) {
-      try {
-        const res = await api.post('/auth/login', {
-          email,
-          password,
-        });
+    if (!email || !password) {
+      toast.error('이메일과 비밀번호를 모두 입력해주세요');
+      return;
+    }
+    if (!emailRegex.test(email)) {
+      toast.error('올바른 이메일을 입력해주세요');
+    }
 
-        if (res.status === 200) {
-          router.push('/list');
-        } else {
-          toast.error('이메일 또는 비밀번호가 잘못되었습니다.');
-        }
-      } catch (error) {
-        console.error(error);
+    try {
+      const res = await api.post('/auth/login', {
+        email,
+        password,
+      });
+
+      if (res.status === 200) {
+        setUserState(email);
+        router.push('/list');
+      } else {
+        toast.error('이메일 또는 비밀번호가 잘못되었습니다.');
       }
+    } catch (error) {
+      console.error(error);
     }
   };
 
@@ -47,6 +63,7 @@ const SignIn = () => {
     try {
       const res = await api.get('/auth/kakao-login');
       if (res.status === 200) {
+        setUserState(res.data.email);
         router.push('/list');
       }
     } catch (error) {
@@ -104,16 +121,21 @@ const SignIn = () => {
           </div>
           <Button width={'w-10/12'}>로그인</Button>
         </form>
-        <Button
-          width={'w-10/12'}
-          bgcolor={'bg-kakaoYellow'}
-          onClick={kakaoSignIn}
+        <Link
+          href="https://kdt-react-node-1-team03.elicecoding.com/api/auth/kakao-login"
+          className="w-10/12"
         >
-          <div className="flex justify-center">
-            <Image src={KakaoLogo} width={27} height={27} alt="kakao" />
-            <span className="ml-1">카카오 로그인</span>
-          </div>
-        </Button>
+          <Button
+            width={'w-full'}
+            bgcolor={'bg-kakaoYellow'}
+            onClick={kakaoSignIn}
+          >
+            <div className="flex justify-center">
+              <Image src={KakaoLogo} width={27} height={27} alt="kakao" />
+              <span className="ml-1">카카오 로그인</span>
+            </div>
+          </Button>
+        </Link>
         <button className="mt-2" onClick={moveToSignUp}>
           회원가입
         </button>

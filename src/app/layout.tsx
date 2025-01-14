@@ -1,12 +1,15 @@
 'use client';
 // import type { Metadata } from 'next';
-import { ToastContainer } from 'react-toastify';
+import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 import './globals.css';
 import DesktopUi from './DesktopUi';
 import Script from 'next/script';
 import { useGlobalStore } from '@/stores/globalState';
+import { useEffect } from 'react';
+import { useLocationStore } from '@/stores/locationState';
+import useGeoLocationPermission from '@/hooks/useGeoLocation';
 
 // export const metadata: Metadata = {
 //   title: 'Campingping',
@@ -19,6 +22,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   const { setMapScriptLoaded } = useGlobalStore();
+  const { updateLocation } = useLocationStore();
+  const isGeoLocationGranted = useGeoLocationPermission();
+
+  useEffect(() => {
+    if (isGeoLocationGranted) {
+      updateLocation();
+    } else {
+      toast.warn(
+        '위치 권한을 설정하지 않으면 사용하지 못하는 기능이 있어요 !',
+        {
+          autoClose: 7000,
+        }
+      );
+    }
+  }, [isGeoLocationGranted, updateLocation]);
 
   return (
     <html lang="en">
@@ -29,7 +47,11 @@ export default function RootLayout({
             setMapScriptLoaded(true);
           }}
         />
-        <ToastContainer position="top-center" draggable />
+        <ToastContainer
+          position="top-center"
+          draggable
+          className="w-auto max-w-[90%] mt-12"
+        />
         <div className="flex h-screen justify-center items-center">
           <DesktopUi />
           <div className="w-full md:max-w-[450px] h-full flex justify-center overflow-auto">

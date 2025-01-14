@@ -1,7 +1,19 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  async redirects() {
+    return [
+      {
+        source: '/',
+        destination: '/list',
+        permanent: true,
+      },
+    ];
+  },
   images: {
-    domains: ['gocamping.or.kr'],
+    domains: [
+      'gocamping.or.kr',
+      'campingping-image.s3.ap-northeast-2.amazonaws.com',
+    ],
   },
   rewrites: async () => {
     return [

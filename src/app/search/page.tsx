@@ -3,8 +3,8 @@
 import Image from 'next/image';
 
 import closeIcon from '@icons/close.svg';
-import { useRouter } from 'next/navigation';
-import useRegionHandler from '@/hooks/useRegionHandler';
+
+import { regionStore } from '@/stores/useRegionState';
 
 const regions = [
   '서울특별시',
@@ -27,9 +27,7 @@ const regions = [
 ];
 
 const Search = () => {
-  const router = useRouter();
-  const { selectedRegion, handleUserSelect, coloredRegion, setColoredRegion } =
-    useRegionHandler();
+  const { coloredState, setRegionState } = regionStore();
 
   const closeSearch = () => {
     history.back();
@@ -37,13 +35,17 @@ const Search = () => {
 
   const handleSearch = async () => {
     try {
-      if (selectedRegion) {
-        sessionStorage.setItem('region', selectedRegion);
-        router.push('/map');
-      }
-      if (!selectedRegion) {
-        history.back();
-      }
+      // if (regionState && pathState === '/map') {
+      //   history.back();
+      //   setPathState(null);
+      // }
+      // if (regionState === null) {
+      //   history.back();
+      // } else {
+      //   router.replace(`/map?region=${}`);
+      // }
+
+      history.back();
     } catch (error) {
       console.error(error);
     }
@@ -64,9 +66,9 @@ const Search = () => {
           return (
             <div
               key={region}
-              className={`flex justify-center items-center border  w-36 h-12 rounded-full ${coloredRegion === region ? 'border-Green text-Green' : 'border-LightGray text-Gray'}`}
+              className={`flex justify-center items-center border  w-36 h-12 rounded-full ${coloredState === region ? 'border-Green text-Green' : 'border-LightGray text-Gray'}`}
               onClick={(e) => {
-                handleUserSelect(e);
+                setRegionState(e);
               }}
             >
               {region}
